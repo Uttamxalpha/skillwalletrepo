@@ -23,16 +23,17 @@ PRESET_QUICK_PROMPTS = [
 
 def render_weather_and_chatbot_tab(gemini_client: ConstructionGeminiClient):
     st.markdown("## 🌦️ Daily Site Assistant & Weather-Aware Advisory (Epic 5)")
-    st.caption("Real-Time Microclimate Safety Matrix, Dynamic Engineering Protocols & Multi-Turn Site AI Assistant")
+    st.caption("Scenario-Based Microclimate Safety Matrix, Dynamic Engineering Protocols & Multi-Turn Site AI Assistant")
 
     # Section 1: Weather Condition Selector & Dynamic Protocols
-    st.markdown("### 1. Active Weather Condition & Hazard Alerts")
+    st.markdown("### 1. Scenario-Based Microclimate Weather Advisory")
+    st.info("ℹ️ **Scenario-Based Simulation:** Select an atmospheric condition scenario below to review automated safety protocols under OSHA 1926 & IS 13415. Manual scenario selector active (no live telemetry hardware).")
 
     weather_choice = st.selectbox(
-        "Current Site Weather / Environmental Condition",
+        "Current Site Weather / Environmental Scenario",
         options=list(WEATHER_PROTOCOLS.keys()),
         index=0,
-        help="Select live or forecast atmospheric conditions to trigger automated safety protocol adjustments."
+        help="Select live or forecast atmospheric conditions to inspect automated safety protocol adjustments."
     )
 
     protocol = get_weather_protocol(weather_choice)
@@ -61,7 +62,7 @@ def render_weather_and_chatbot_tab(gemini_client: ConstructionGeminiClient):
     with c1:
         st.markdown(
             f"""
-            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; height: 140px;">
+            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; min-height: 140px;">
                 <div style="color: #F59E0B; font-weight: 700; font-size: 0.92rem; margin-bottom: 4px;">🏗️ Tower Crane & Heavy Hoisting Protocol</div>
                 <div style="color: #E2E8F0; font-size: 0.88rem; line-height: 1.4;">{protocol['crane_operations']}</div>
             </div>
@@ -70,7 +71,7 @@ def render_weather_and_chatbot_tab(gemini_client: ConstructionGeminiClient):
         )
         st.markdown(
             f"""
-            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; height: 140px;">
+            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; min-height: 140px;">
                 <div style="color: #38BDF8; font-weight: 700; font-size: 0.92rem; margin-bottom: 4px;">⚡ Electrical & Excavation De-watering</div>
                 <div style="color: #E2E8F0; font-size: 0.88rem; line-height: 1.4;">{protocol['electrical_safety']}</div>
             </div>
@@ -81,7 +82,7 @@ def render_weather_and_chatbot_tab(gemini_client: ConstructionGeminiClient):
     with c2:
         st.markdown(
             f"""
-            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; height: 140px;">
+            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; min-height: 140px;">
                 <div style="color: #10B981; font-weight: 700; font-size: 0.92rem; margin-bottom: 4px;">🧪 Concrete Curing & Pouring Strategy (IS 7861)</div>
                 <div style="color: #E2E8F0; font-size: 0.88rem; line-height: 1.4;">{protocol['concrete_protocol']}</div>
             </div>
@@ -90,7 +91,7 @@ def render_weather_and_chatbot_tab(gemini_client: ConstructionGeminiClient):
         )
         st.markdown(
             f"""
-            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; height: 140px;">
+            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; min-height: 140px;">
                 <div style="color: #EC4899; font-weight: 700; font-size: 0.92rem; margin-bottom: 4px;">👷 Worker Welfare & Scaffolding Restrictions</div>
                 <div style="color: #E2E8F0; font-size: 0.88rem; line-height: 1.4;">{protocol['worker_welfare']} | {protocol['scaffolding_status']}</div>
             </div>
@@ -103,8 +104,17 @@ def render_weather_and_chatbot_tab(gemini_client: ConstructionGeminiClient):
     st.markdown("### 2. Multi-Turn Construction Engineering Site Assistant")
     st.caption("Ask technical questions on IS 456, OSHA, NBC 2016, BoQ calculations, or active site dilemmas.")
 
+    st.markdown(
+        """
+        <div style="background: rgba(30, 41, 59, 0.6); border-left: 4px solid #8B5CF6; border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; font-size: 0.82rem; color: #94A3B8;">
+            💬 <b>Engineering Advisory Notice:</b> SiteAssist AI provides general technical standard references under IS 456, IS 13415, and OSHA 1926. It does not replace project-specific structural design or stamped engineering drawings.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
     if not gemini_client.is_live:
-        st.info("💡 **Demonstration Assistant Mode:** Responds with civil engineering expertise even without a Gemini API key.")
+        st.info("💡 **Demonstration Assistant Mode:** Responding via verified civil engineering knowledge base without consuming API credits.")
 
     # Initialize chat message history
     if "chat_messages" not in st.session_state:
@@ -141,16 +151,17 @@ def render_weather_and_chatbot_tab(gemini_client: ConstructionGeminiClient):
 
     target_query = selected_quick_prompt or user_query
 
-    if target_query:
+    if target_query and target_query.strip():
+        clean_q = target_query.strip()
         # Append User Message
-        st.session_state["chat_messages"].append({"role": "user", "content": target_query})
-        st.chat_message("user", avatar="👷").markdown(target_query)
+        st.session_state["chat_messages"].append({"role": "user", "content": clean_q})
+        st.chat_message("user", avatar="👷").markdown(clean_q)
 
         # Generate Assistant Response
         with st.chat_message("assistant", avatar="🏗️"):
             with st.spinner("Consulting IS 456 / OSHA knowledge base and synthesizing engineering advice..."):
                 reply, is_mock = gemini_client.chat_query(
-                    query=target_query,
+                    query=clean_q,
                     conversation_history=st.session_state["chat_messages"],
                     weather_context=protocol
                 )
@@ -184,5 +195,3 @@ if __name__ == "__main__":
     print(reply[:250] + "...")
     print("=" * 70)
     print("✅ Chatbot & Weather Advisory loaded and verified successfully!")
-
-

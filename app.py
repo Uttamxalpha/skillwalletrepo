@@ -83,6 +83,13 @@ with st.sidebar:
     st.markdown("#### 🔑 Model & API Authentication")
 
     env_api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not env_api_key:
+        try:
+            if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
+                env_api_key = str(st.secrets["GEMINI_API_KEY"]).strip()
+        except Exception:
+            pass
+
     api_key_input = st.text_input(
         "Google Gemini API Key",
         value=env_api_key,

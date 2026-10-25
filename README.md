@@ -144,8 +144,28 @@ Open your browser at `http://localhost:8501`.
 
 ### 4. Run Automated Tests
 ```bash
+# Run with pytest (recommended):
+pytest tests/ -v
+
+# Or run with standard unittest:
 python3 -m unittest discover tests
 ```
+
+---
+
+## 🔒 Configuration & API Secrets
+The platform operates 100% reliably out of the box in **Demonstration Mode** without requiring any credentials.
+
+To enable **Live Multimodal Gemini Analysis**:
+1. Copy the example secrets file:
+   ```bash
+   cp .streamlit/secrets.toml.example .streamlit/secrets.toml
+   ```
+2. Insert your Google Gemini API key:
+   ```toml
+   GEMINI_API_KEY = "AIzaSy..."
+   ```
+   *(Or enter it interactively in the sidebar password field, or set `export GEMINI_API_KEY="AIzaSy..."`)*.
 
 ---
 

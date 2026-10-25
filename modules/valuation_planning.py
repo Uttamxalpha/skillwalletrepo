@@ -34,14 +34,31 @@ def calculate_project_financials(
 ) -> Dict[str, Any]:
     """
     Computes CapEx, Current Valuation, Remaining Budget, and BoQ requirements.
+    Safely sanitizes numerical inputs (clamps 0-100% completion, handles non-positive sqft).
     """
+    # Robust input sanitization
+    try:
+        sqft = float(built_up_sqft)
+    except (ValueError, TypeError):
+        sqft = 50000.0
+
+    if sqft <= 0:
+        sqft = 1000.0  # Safe positive floor
+
+    try:
+        pct = float(completion_pct)
+    except (ValueError, TypeError):
+        pct = 0.0
+
+    pct = max(0.0, min(100.0, pct))
+
     tier_info = LOCATION_TIERS.get(location_tier_name, list(LOCATION_TIERS.values())[0])
     struct_info = STRUCTURE_SPECS.get(structure_type, list(STRUCTURE_SPECS.values())[0])
     grade_multiplier = MATERIAL_GRADES.get(material_grade_name, 1.00)
 
     # Base construction cost per sq ft
     unit_cost_sqft = tier_info["base_construction_sqft"] * struct_info["cost_multiplier"] * grade_multiplier
-    total_construction_budget = unit_cost_sqft * built_up_sqft
+    total_construction_budget = unit_cost_sqft * sqft
 
     # Land & Approval Component (typically 30-45% of total asset capitalization in India)
     land_cost_factor = 0.40 if tier_info["tier"] == "Tier 1" else 0.30
@@ -51,19 +68,18 @@ def calculate_project_financials(
 
     # CapEx Incurred to date
     # Land & initial approvals are 100% committed upfront, construction scales with completion %
-    construction_incurred = total_construction_budget * (completion_pct / 100.0)
+    construction_incurred = total_construction_budget * (pct / 100.0)
     capex_incurred = estimated_land_and_preconstruction + construction_incurred
     capex_remaining = max(0.0, total_project_capex_budget - capex_incurred)
 
     # Market Valuation Calculation
     market_rate_sqft = current_market_rate_override or tier_info["base_market_rate_sqft"]
-    gross_market_potential = built_up_sqft * market_rate_sqft
+    gross_market_potential = sqft * market_rate_sqft
 
     # In Indian real estate finance (RERA/NBFC benchmarks), an under-construction property is valued as:
     # Asset Value = Sunk CapEx (Land + Incurred Civil) + (Completion Progress * Development Margin) + Discounted Future Net Cash Flows
     # At 0%, value ~ Land Value. At 100%, value = Gross Market Potential.
-    # Risk-discount curve: As completion % rises, the completion discount decreases.
-    completion_factor = completion_pct / 100.0
+    completion_factor = pct / 100.0
     value_discount_factor = 0.65 + (0.35 * (completion_factor ** 0.85))
     current_asset_valuation = (
         estimated_land_and_preconstruction +
@@ -71,17 +87,17 @@ def calculate_project_financials(
     )
 
     # Material Requirement Thumb Rules (per IS 456 & CPWD DSR norms)
-    factor_k_sqft = built_up_sqft / 1000.0
+    factor_k_sqft = sqft / 1000.0
     total_steel_mt = struct_info["steel_mt_per_1000sqft"] * factor_k_sqft
     total_cement_bags = struct_info["cement_bags_per_1000sqft"] * factor_k_sqft
     total_sand_cft = struct_info["sand_cft_per_1000sqft"] * factor_k_sqft
     total_aggregate_cft = struct_info["aggregate_cft_per_1000sqft"] * factor_k_sqft
 
     # Materials consumed vs remaining based on completion
-    steel_consumed_mt = total_steel_mt * (completion_pct / 100.0)
+    steel_consumed_mt = total_steel_mt * (pct / 100.0)
     steel_remaining_mt = total_steel_mt - steel_consumed_mt
 
-    cement_consumed_bags = total_cement_bags * (completion_pct / 100.0)
+    cement_consumed_bags = total_cement_bags * (pct / 100.0)
     cement_remaining_bags = total_cement_bags - cement_consumed_bags
 
     # Embodied Carbon Footprint Estimate (IS / IGBC norms: ~0.82 kg CO2e/kg cement, ~1.85 kg CO2e/kg steel)
@@ -97,8 +113,8 @@ def calculate_project_financials(
     contingency_cost = total_construction_budget * struct_info["contingency_pct"]
 
     return {
-        "built_up_sqft": built_up_sqft,
-        "completion_pct": completion_pct,
+        "built_up_sqft": sqft,
+        "completion_pct": pct,
         "location_tier": tier_info["tier"],
         "unit_construction_cost_sqft": unit_cost_sqft,
         "market_rate_sqft": market_rate_sqft,
@@ -162,7 +178,7 @@ def render_valuation_planning_tab():
             )
             built_up_sqft = st.number_input(
                 "📐 Built-up Area (Sq. Ft.)",
-                min_value=2000,
+                min_value=1000,
                 max_value=2000000,
                 value=75000,
                 step=5000,
@@ -229,6 +245,17 @@ def render_valuation_planning_tab():
             label="Current Market Asset Valuation",
             value=fin["current_asset_valuation_str"],
             delta=f"Fully Built: {fin['gross_completed_valuation_str']}"
+        )
+
+    # Assumptions & Methodology Disclosure
+    with st.expander("ℹ️ View Transparent Estimation Assumptions & Valuation Methodology"):
+        st.markdown(
+            f"""
+            - **Illustrative Baseline Rate:** Construction unit cost baseline is **₹{fin['unit_construction_cost_sqft']:,.0f} / sq. ft.** (derived from location tier and structure typology multipliers).
+            - **CapEx Sunk Curve:** Land & pre-construction approvals are modeled as 100% committed upfront, while civil/MEP expenditure scales linearly with milestone progress (**{completion_pct}%**).
+            - **Asset Valuation Formula:** Evaluated under RERA/NBFC development benchmarks with a completion-stage risk discount factor.
+            - **Material Norms:** Structural steel and cement quantities derived from CPWD / IS 456 empirical coefficients.
+            """
         )
 
     # Detailed Cost Breakdown & Material BoQ
@@ -316,9 +343,12 @@ def render_valuation_planning_tab():
                 st.session_state["pollinations_prompt"] = generated_prompt
 
             active_url = st.session_state["pollinations_active_url"]
-            with st.spinner("Streaming high-resolution 3D architectural render via Flux API..."):
-                st.image(active_url, caption="Conceptual 3D Visualization (Pollinations AI / Flux)", use_container_width=True)
-                st.markdown(f"[🔗 Direct High-Res Image Link]({active_url})")
+            try:
+                with st.spinner("Streaming high-resolution 3D architectural render via Flux API..."):
+                    st.image(active_url, caption="Conceptual 3D Visualization (Pollinations AI / Flux)", use_container_width=True)
+                    st.markdown(f"[🔗 Direct High-Res Image Link]({active_url})")
+            except Exception as e:
+                st.warning(f"Unable to display real-time render stream: {str(e)}. You may view the direct stream link above.")
         else:
             st.markdown(
                 """
@@ -358,4 +388,3 @@ if __name__ == "__main__":
     print(f"  • Embodied Carbon: ~{sample_fin['materials']['carbon_footprint_tonnes']:,} tCO2e")
     print("=" * 70)
     print("✅ Financial and BoQ calculations executed successfully!")
-

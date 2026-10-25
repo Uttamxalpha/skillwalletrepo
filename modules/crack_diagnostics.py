@@ -19,6 +19,16 @@ def render_crack_diagnostics_tab(gemini_client: ConstructionGeminiClient, sample
     st.markdown("## 🔍 Concrete Crack Diagnostics & Structural Integrity")
     st.caption("Forensic AI Structural Defect Classification, Crack Width Metrology & IS 456:2000 Remediation Protocols")
 
+    # Structural Engineering Disclaimer Banner
+    st.markdown(
+        """
+        <div style="background: rgba(30, 41, 59, 0.7); border-left: 4px solid #F59E0B; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.84rem; color: #94A3B8;">
+            ⚠️ <b>Structural Engineering Notice:</b> AI-generated defect classifications and repair sequences are preliminary screening estimates. A licensed Chartered Structural Engineer (IS 456 compliant) must conduct in-situ physical testing (UPV / core testing) and issue stamped engineering specifications before executing any structural repair or resin injection.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
     col_upload, col_preview = st.columns([1, 1], gap="medium")
 
     with col_upload:
@@ -58,8 +68,11 @@ def render_crack_diagnostics_tab(gemini_client: ConstructionGeminiClient, sample
     with col_preview:
         st.markdown("#### 2. Defect Image Preview")
         if active_img_bytes:
-            image = Image.open(io.BytesIO(active_img_bytes))
-            st.image(image, caption=f"Inspected Concrete Surface: {active_img_name}", use_container_width=True)
+            try:
+                image = Image.open(io.BytesIO(active_img_bytes))
+                st.image(image, caption=f"Inspected Concrete Surface: {active_img_name}", use_container_width=True)
+            except Exception as e:
+                st.error(f"Unable to render image: {str(e)}")
         else:
             st.markdown(
                 """
@@ -82,18 +95,22 @@ def render_crack_diagnostics_tab(gemini_client: ConstructionGeminiClient, sample
     # Render results
     if "crack_diag_result" in st.session_state:
         res = st.session_state["crack_diag_result"]
-        is_mock = st.session_state.get("crack_is_mock", False)
+        is_mock = st.session_state.get("crack_is_mock", False) or res.get("is_demonstration_mode", False)
 
         st.markdown("---")
         st.markdown("### 🔬 Forensic Diagnostic Report & Repair Specifications")
 
         if is_mock:
-            st.warning("⚡ **Demonstration Mode Active:** Serving high-precision forensic structural data benchmarked against IS 456:2000.")
+            st.warning(
+                "⚡ **DEMONSTRATION MODE ACTIVE:** Google Gemini API credentials are not active. "
+                "The findings displayed below are **pre-configured baseline forensic scenario data** "
+                "and do NOT represent an AI analysis of the uploaded image."
+            )
 
         defect_type = res.get("defect_type", "Defect")
         severity_score = float(res.get("severity_score", 5.0))
         risk_rating = res.get("risk_rating", "Medium")
-        width_mm = float(res.get("estimated_crack_width_mm", 0.5))
+        width_mm = float(res.get("estimated_crack_width_mm", 0.5)) if res.get("estimated_crack_width_mm") is not None else 0.0
         is_structural = res.get("is_structural_threat", False)
 
         risk_color = "#EF4444" if risk_rating == "Critical" else ("#F97316" if risk_rating == "High" else ("#F59E0B" if risk_rating == "Medium" else "#10B981"))
@@ -103,11 +120,16 @@ def render_crack_diagnostics_tab(gemini_client: ConstructionGeminiClient, sample
         with m1:
             st.metric(label="Classified Defect", value=defect_type)
         with m2:
-            st.metric(label="Estimated Crack Width", value=f"{width_mm:.2f} mm", delta="Exceeds 0.3mm Limit" if width_mm > 0.3 else "Within Service Limit")
+            width_str = f"{width_mm:.2f} mm" if width_mm > 0 else "Uncertain / Uncalibrated"
+            st.metric(label="Estimated Crack Width", value=width_str, delta="Exceeds 0.3mm Limit" if width_mm > 0.3 else "Within Service Limit")
         with m3:
             st.metric(label="Severity Index", value=f"{severity_score:.1f} / 10.0")
         with m4:
             st.metric(label="Structural Threat", value="YES (Load Bearing)" if is_structural else "NO (Cosmetic / Surface)")
+
+        # Metrology Uncertainty Notice
+        confidence_note = res.get("width_measurement_confidence", "Optical estimation carries field uncertainty")
+        st.info(f"📏 **Metrology & Calibration Assessment:** {confidence_note}")
 
         # IS 456 Compliance Alert Banner
         compliance_text = res.get("is456_compliance_status", "Compliant")
@@ -217,5 +239,3 @@ if __name__ == "__main__":
     print(f"Engineering Repairs Recommended: {len(mock_res['engineering_repairs'])}")
     print("=" * 70)
     print("✅ Crack Diagnostics module loaded and verified successfully!")
-
-

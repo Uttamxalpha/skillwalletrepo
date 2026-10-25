@@ -19,10 +19,17 @@ def render_ppe_audit_tab(gemini_client: ConstructionGeminiClient, sample_image_b
     st.markdown("## 🦺 Site Safety & PPE Compliance Audit")
     st.caption("AI-Powered Vision Audit for OSHA 1926 & IS 13415 / IS 456 Regulatory Compliance")
 
-    col_upload, col_preview = st.columns([1, 1], gap="medium")
+    # Legal & Safety Inspection Disclaimer Banner
+    st.markdown(
+        """
+        <div style="background: rgba(30, 41, 59, 0.7); border-left: 4px solid #38BDF8; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.84rem; color: #94A3B8;">
+            🛡️ <b>Legal & Safety Notice:</b> This automated visual assessment is an assistive decision-support tool. It does <b>not</b> guarantee legal compliance under OSHA 1926 or IS 13415 and cannot replace in-person physical inspections by qualified site safety engineers.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-    uploaded_file = None
-    use_sample = False
+    col_upload, col_preview = st.columns([1, 1], gap="medium")
 
     with col_upload:
         st.markdown("#### 1. Upload or Select Site Image")
@@ -61,8 +68,11 @@ def render_ppe_audit_tab(gemini_client: ConstructionGeminiClient, sample_image_b
     with col_preview:
         st.markdown("#### 2. Site Image Preview")
         if active_img_bytes:
-            image = Image.open(io.BytesIO(active_img_bytes))
-            st.image(image, caption=f"Active Site Capture: {active_img_name}", use_container_width=True)
+            try:
+                image = Image.open(io.BytesIO(active_img_bytes))
+                st.image(image, caption=f"Active Site Capture: {active_img_name}", use_container_width=True)
+            except Exception as e:
+                st.error(f"Unable to render image: {str(e)}")
         else:
             st.markdown(
                 """
@@ -85,13 +95,17 @@ def render_ppe_audit_tab(gemini_client: ConstructionGeminiClient, sample_image_b
     # Render results if present in state
     if "ppe_audit_result" in st.session_state:
         res = st.session_state["ppe_audit_result"]
-        is_mock = st.session_state.get("ppe_is_mock", False)
+        is_mock = st.session_state.get("ppe_is_mock", False) or res.get("is_demonstration_mode", False)
 
         st.markdown("---")
         st.markdown("### 📋 Safety Audit Diagnostics & Findings")
 
         if is_mock:
-            st.warning("⚡ **Demonstration Mode Active:** Gemini API key was not supplied or rate-limited. Serving high-fidelity realistic inspection benchmark data conforming to OSHA 1926.")
+            st.warning(
+                "⚡ **DEMONSTRATION MODE ACTIVE:** Google Gemini API credentials are not active. "
+                "The findings displayed below are **pre-configured baseline demonstration scenario data** "
+                "and do NOT represent an AI analysis of the uploaded image."
+            )
 
         # Top Metric Cards
         score = res.get("safety_score", 0)
@@ -155,15 +169,31 @@ def render_ppe_audit_tab(gemini_client: ConstructionGeminiClient, sample_image_b
             st.markdown("##### ✅ Mandatory PPE Detection Checklist")
             checklist = res.get("ppe_checklist", [])
             for item in checklist:
-                c_status = item.get("compliance_status", "Compliant")
-                icon = "🟢" if c_status == "Compliant" else ("🟡" if c_status in ["Partial", "Not Applicable"] else "🔴")
+                c_status = item.get("compliance_status", "Uncertain / Not Visible")
+                if c_status in ["Present", "Compliant"]:
+                    icon = "🟢"
+                    badge_bg = "rgba(16, 185, 129, 0.2)"
+                    badge_color = "#10B981"
+                elif c_status in ["Missing", "Violation"]:
+                    icon = "🔴"
+                    badge_bg = "rgba(239, 68, 68, 0.2)"
+                    badge_color = "#EF4444"
+                elif c_status in ["Uncertain / Not Visible", "Partial"]:
+                    icon = "🟡"
+                    badge_bg = "rgba(245, 158, 11, 0.2)"
+                    badge_color = "#F59E0B"
+                else:
+                    icon = "⚪"
+                    badge_bg = "rgba(148, 163, 184, 0.2)"
+                    badge_color = "#94A3B8"
+
                 with st.container():
                     st.markdown(
                         f"""
                         <div style="background: rgba(30, 41, 59, 0.6); padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid {status_color};">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span style="font-weight: 600; font-size: 0.95rem;">{icon} {item.get('item')}</span>
-                                <span style="background: #0F172A; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">{c_status}</span>
+                                <span style="background: {badge_bg}; color: {badge_color}; border: 1px solid {badge_color}; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700;">{c_status}</span>
                             </div>
                             <div style="font-size: 0.82rem; color: #94A3B8; margin-top: 4px;">{item.get('notes')}</div>
                         </div>
@@ -177,7 +207,6 @@ def render_ppe_audit_tab(gemini_client: ConstructionGeminiClient, sample_image_b
         if hazards:
             for idx, h in enumerate(hazards, 1):
                 sev = h.get("severity", "Medium")
-                sev_color = "#EF4444" if sev == "Critical" else ("#F97316" if sev == "High" else "#F59E0B")
                 with st.expander(f"Hazard #{idx}: {h.get('hazard_title')} [Severity: {sev}]", expanded=(sev in ["Critical", "High"])):
                     st.markdown(f"**Identified Zone:** `{h.get('location_in_photo')}`")
                     st.markdown(f"**Regulatory Standard Violated:** `{h.get('standard_violated')}`")
@@ -219,5 +248,3 @@ if __name__ == "__main__":
     print(f"Hazards Identified: {len(mock_res['identified_hazards'])}")
     print("=" * 70)
     print("✅ PPE Audit module loaded and verified successfully!")
-
-

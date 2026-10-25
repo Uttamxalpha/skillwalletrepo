@@ -7,7 +7,6 @@ Turnkey Production-Ready Streamlit Application
 
 import sys
 import os
-import subprocess
 
 # Auto-launch Streamlit if executed directly via python app.py
 try:
@@ -17,9 +16,13 @@ except Exception:
     _ctx = None
 
 if _ctx is None and __name__ == "__main__":
-    print("🚀 Auto-launching Streamlit web application on http://localhost:8501 ...")
-    subprocess.run([sys.executable, "-m", "streamlit", "run", __file__, "--server.port=8501", "--server.headless=true"])
-    sys.exit(0)
+    venv_python = os.path.join(os.path.dirname(__file__), ".venv", "bin", "python3")
+    py_exec = venv_python if os.path.exists(venv_python) else sys.executable
+    print("=" * 70)
+    print("🏗️ CONSTRUCT-AI: Launching Streamlit Web Application...")
+    print("👉 Open your browser at: http://localhost:8501")
+    print("=" * 70)
+    os.execv(py_exec, [py_exec, "-m", "streamlit", "run", __file__])
 
 import streamlit as st
 from PIL import Image

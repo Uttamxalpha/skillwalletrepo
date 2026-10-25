@@ -60,3 +60,23 @@ def test_fetch_pollinations(url: str, timeout: int = 15) -> Tuple[bool, str]:
         return True, "URL constructed successfully."
     except Exception as e:
         return False, str(e)
+
+
+if __name__ == "__main__":
+    print("=" * 70)
+    print("🎨 CONSTRUCT-AI: Pollinations 3D Render Prompt Engine (Epic 3)")
+    print("Platform ID: 6ac4c98d1dcde6d7857c1642")
+    print("=" * 70)
+    p = generate_architectural_prompt(
+        structure_type="Residential High-Rise (RCC Framed G+20)",
+        tier_name="Tier 1",
+        style=ARCHITECTURAL_STYLES[0],
+        lighting=LIGHTING_CONDITIONS[0]
+    )
+    url = get_pollinations_image_url(p, seed=42)
+    print("Synthesized Prompt:\n", p[:180] + "...")
+    print("\nFlux API Endpoint URL:\n", url)
+    print("=" * 70)
+    print("✅ Pollinations module loaded successfully!")
+
+

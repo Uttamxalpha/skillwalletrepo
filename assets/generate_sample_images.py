@@ -142,3 +142,4 @@ if __name__ == "__main__":
     create_sample_ppe_image(ppe_path)
     create_sample_crack_image(crack_path)
     print(f"Sample test images generated successfully: {ppe_path}, {crack_path}")
+

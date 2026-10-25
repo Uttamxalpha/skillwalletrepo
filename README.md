@@ -200,3 +200,4 @@ This application has **zero external database dependencies** (SQLite/PostgreSQL 
 - **IS 13415:1992:** Code of Safety for Civil Engineering Construction and Demolition Works.
 - **IS 7861 (Part 1 & 2):** Code of Practice for Extreme Weather Concreting (Hot and Cold Weather).
 - **NBC 2016:** National Building Code of India (Structural Safety & Fire Protection).
+

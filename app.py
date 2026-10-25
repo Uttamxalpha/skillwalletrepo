@@ -5,8 +5,23 @@ Platform ID: 6ac4c98d1dcde6d7857c1642
 Turnkey Production-Ready Streamlit Application
 """
 
-import streamlit as st
+import sys
 import os
+import subprocess
+
+# Auto-launch Streamlit if executed directly via python app.py
+try:
+    from streamlit.runtime.scriptrunner import get_script_run_ctx
+    _ctx = get_script_run_ctx()
+except Exception:
+    _ctx = None
+
+if _ctx is None and __name__ == "__main__":
+    print("🚀 Auto-launching Streamlit web application on http://localhost:8501 ...")
+    subprocess.run([sys.executable, "-m", "streamlit", "run", __file__, "--server.port=8501", "--server.headless=true"])
+    sys.exit(0)
+
+import streamlit as st
 from PIL import Image
 
 # Configuration & Modules
@@ -178,3 +193,4 @@ with f2:
     st.caption(f"📌 **Platform ID:** `{config.PLATFORM_ID}`")
 with f3:
     st.caption("🚀 **Deployment:** 1-Click Streamlit Community Cloud")
+

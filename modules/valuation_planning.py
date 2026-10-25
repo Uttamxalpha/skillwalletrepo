@@ -5,6 +5,10 @@ Calculates Indian Real Estate CapEx, Market Asset Valuation (INR Lakhs/Crores),
 and BoQ Material Requirements (Steel & Cement) with milestone indicators.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from typing import Dict, Any
 from config import LOCATION_TIERS, STRUCTURE_SPECS, MATERIAL_GRADES, COMMODITY_RATES
 
@@ -326,3 +330,32 @@ def render_valuation_planning_tab():
                 """,
                 unsafe_allow_html=True
             )
+
+
+if __name__ == "__main__":
+    print("=" * 70)
+    print("🏗️ CONSTRUCT-AI: Project Planning & Valuation Engine (Epic 3)")
+    print("Platform ID: 6ac4c98d1dcde6d7857c1642")
+    print("=" * 70)
+    
+    sample_fin = calculate_project_financials(
+        structure_type="Residential High-Rise (RCC Framed G+20)",
+        built_up_sqft=100000,
+        location_tier_name="Tier 1 (Metro Hubs: Mumbai, Delhi-NCR, Bengaluru, Hyderabad, Chennai)",
+        completion_pct=50
+    )
+    
+    print(f"\n📍 Location: Tier 1 Metros | Typology: Residential High-Rise G+20")
+    print(f"📐 Built-up Area: 100,000 sq ft | Progress: 50% Complete")
+    print(f"💰 Total Project Budget: {sample_fin['total_capex_budget_str']}")
+    print(f"💵 CapEx Incurred to Date: {sample_fin['capex_incurred_str']}")
+    print(f"📉 CapEx Remaining: {sample_fin['capex_remaining_str']}")
+    print(f"📈 Current Asset Valuation: {sample_fin['current_asset_valuation_str']}")
+    print(f"🏢 Completed Potential Value: {sample_fin['gross_completed_valuation_str']}")
+    print(f"\n🔩 BoQ Material Requirements:")
+    print(f"  • Steel: {sample_fin['materials']['steel_consumed_mt']} MT consumed / {sample_fin['materials']['steel_total_mt']} MT Total")
+    print(f"  • Cement: {sample_fin['materials']['cement_consumed_bags']:,} bags consumed / {sample_fin['materials']['cement_total_bags']:,} bags Total")
+    print(f"  • Embodied Carbon: ~{sample_fin['materials']['carbon_footprint_tonnes']:,} tCO2e")
+    print("=" * 70)
+    print("✅ Financial and BoQ calculations executed successfully!")
+

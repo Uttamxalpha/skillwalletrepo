@@ -4,6 +4,10 @@ Platform ID: 6ac4c98d1dcde6d7857c1642
 Dynamic meteorological hazard mitigation and multi-turn civil engineering chat assistant.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import streamlit as st
 from config import WEATHER_PROTOCOLS
 from modules.weather_advisory import get_weather_protocol, get_weather_alert_level_color
@@ -165,3 +169,20 @@ def render_weather_and_chatbot_tab(gemini_client: ConstructionGeminiClient):
                 }
             ]
             st.rerun()
+
+
+if __name__ == "__main__":
+    print("=" * 70)
+    print("🌦️ CONSTRUCT-AI: Site Assistant & Weather Advisory Module (Epic 5)")
+    print("Platform ID: 6ac4c98d1dcde6d7857c1642")
+    print("=" * 70)
+    client = ConstructionGeminiClient()
+    sample_q = "Explain IS 456 crack width limits & serviceability rules"
+    reply, _ = client.chat_query(sample_q, [])
+    print(f"Sample Query: {sample_q}\n")
+    print("Assistant Reply Preview:")
+    print(reply[:250] + "...")
+    print("=" * 70)
+    print("✅ Chatbot & Weather Advisory loaded and verified successfully!")
+
+

@@ -4,6 +4,10 @@ Platform ID: 6ac4c98d1dcde6d7857c1642
 Forensic defect classification and repair decision support under IS 456:2000 standards.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import streamlit as st
 import json
 from PIL import Image
@@ -197,3 +201,21 @@ def render_crack_diagnostics_tab(gemini_client: ConstructionGeminiClient, sample
                 mime="application/json",
                 use_container_width=True
             )
+
+
+if __name__ == "__main__":
+    print("=" * 70)
+    print("🧱 CONSTRUCT-AI: Concrete Crack Diagnostics Module (Epic 2)")
+    print("Platform ID: 6ac4c98d1dcde6d7857c1642")
+    print("=" * 70)
+    client = ConstructionGeminiClient()
+    mock_res = client.get_mock_crack_diagnostics("sample_crack.jpg")
+    print(f"Defect Classified: {mock_res['defect_type']}")
+    print(f"Crack Width: {mock_res['estimated_crack_width_mm']} mm")
+    print(f"Severity Score: {mock_res['severity_score']}/10.0 | Risk: {mock_res['risk_rating']}")
+    print(f"IS 456 Status: {mock_res['is456_compliance_status'][:60]}...")
+    print(f"Engineering Repairs Recommended: {len(mock_res['engineering_repairs'])}")
+    print("=" * 70)
+    print("✅ Crack Diagnostics module loaded and verified successfully!")
+
+

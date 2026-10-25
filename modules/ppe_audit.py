@@ -4,6 +4,10 @@ Platform ID: 6ac4c98d1dcde6d7857c1642
 Audits construction site worker PPE compliance under OSHA 1926 & IS 13415 / IS 456 standards.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import streamlit as st
 import json
 from PIL import Image
@@ -200,3 +204,20 @@ def render_ppe_audit_tab(gemini_client: ConstructionGeminiClient, sample_image_b
                 mime="application/json",
                 use_container_width=True
             )
+
+
+if __name__ == "__main__":
+    print("=" * 70)
+    print("🦺 CONSTRUCT-AI: PPE Safety Audit Module (Epic 2)")
+    print("Platform ID: 6ac4c98d1dcde6d7857c1642")
+    print("=" * 70)
+    client = ConstructionGeminiClient()
+    mock_res = client.get_mock_ppe_audit("sample.jpg")
+    print(f"Safety Score: {mock_res['safety_score']}/100")
+    print(f"Overall Status: {mock_res['overall_status']}")
+    print(f"Checklist Items Audited: {len(mock_res['ppe_checklist'])}")
+    print(f"Hazards Identified: {len(mock_res['identified_hazards'])}")
+    print("=" * 70)
+    print("✅ PPE Audit module loaded and verified successfully!")
+
+

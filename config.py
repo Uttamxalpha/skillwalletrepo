@@ -191,3 +191,4 @@ WEATHER_PROTOCOLS = {
         "scaffolding_status": "Verify grounding/earthing continuity of all steel scaffolding towers."
     }
 }
+
